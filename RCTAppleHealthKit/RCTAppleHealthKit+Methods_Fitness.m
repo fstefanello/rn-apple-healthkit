@@ -49,6 +49,39 @@
     }];
 }
 
+- (void)fitness_getActiveTimeOnDay:(NSDictionary *)input callback:(RCTResponseSenderBlock)callback
+{
+    NSDate *date = [RCTAppleHealthKit dateFromOptions:input key:@"date" withDefault:[NSDate date]];
+    
+    if(date == nil) {
+        callback(@[RCTMakeError(@"could not parse date from options.date", nil, nil)]);
+        return;
+    }
+    
+    HKQuantityType *minutesCountType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierAppleExerciseTime ];
+    HKUnit *stepsUnit = [HKUnit minuteUnit];
+    
+    [self fetchSumOfSamplesOnDayForType:minutesCountType
+                                    unit:stepsUnit
+                                    day:date
+                                    completion:^(double value, NSDate *startDate, NSDate *endDate, NSError *error) {
+                                 
+                                        if (!value) {
+                                            NSLog(@"could not fetch step count for day: %@", error);
+                                            callback(@[RCTMakeError(@"could not fetch step count for day", error, nil)]);
+                                            return;
+                                        }
+                                 
+                                        NSDictionary *response = @{
+                                                            @"value" : @(value),
+                                                            @"startDate" : [RCTAppleHealthKit buildISO8601StringFromDate:startDate],
+                                                            @"endDate" : [RCTAppleHealthKit buildISO8601StringFromDate:endDate],
+                                                            };
+                                 
+                                        callback(@[[NSNull null], response]);
+                             }];
+}
+
 
 - (void)fitness_getDailyStepSamples:(NSDictionary *)input callback:(RCTResponseSenderBlock)callback
 {
@@ -137,7 +170,45 @@
      }];
 
     [self.healthStore executeQuery:query];
+    [self.healthStore enableBackgroundDeliveryForType:sampleType frequency:HKUpdateFrequencyHourly withCompletion:^(BOOL succeeded,NSError *error){
+        return;
+      }];
 }
+
+- (void)fitness_initializeActiveTimeEventObserver:(NSDictionary *)input callback:(RCTResponseSenderBlock)callback
+{
+    HKSampleType *sampleType =
+    [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierAppleExerciseTime];
+    
+    HKObserverQuery *query =
+    [[HKObserverQuery alloc]
+     initWithSampleType:sampleType
+     predicate:nil
+     updateHandler:^(HKObserverQuery *query,
+                     HKObserverQueryCompletionHandler completionHandler,
+                     NSError *error) {
+         
+         if (error) {
+             // Perform Proper Error Handling Here...
+             NSLog(@"*** An error occured while setting up the stepCount observer. %@ ***", error.localizedDescription);
+             callback(@[RCTMakeError(@"An error occured while setting up the stepCount observer", error, nil)]);
+             return;
+         }
+         
+         [self.bridge.eventDispatcher sendAppEventWithName:@"change:activetime"
+                                                      body:@{@"name": @"change:activetime"}];
+         
+         // If you have subscribed for background updates you must call the completion handler here.
+         completionHandler();
+         
+     }];
+    
+    [self.healthStore executeQuery:query];
+    [self.healthStore enableBackgroundDeliveryForType:sampleType frequency:HKUpdateFrequencyHourly withCompletion:^(BOOL succeeded,NSError *error){
+        return;
+    }];
+}
+
 
 
 - (void)fitness_getDistanceWalkingRunningOnDay:(NSDictionary *)input callback:(RCTResponseSenderBlock)callback

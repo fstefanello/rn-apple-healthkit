@@ -42,6 +42,11 @@ RCT_EXPORT_METHOD(initStepCountObserver:(NSDictionary *)input callback:(RCTRespo
     [self fitness_initializeStepEventObserver:input callback:callback];
 }
 
+RCT_EXPORT_METHOD(initActiveTimeObserver:(NSDictionary *)input callback:(RCTResponseSenderBlock)callback)
+{
+    [self fitness_initializeActiveTimeEventObserver:input callback:callback];
+}
+
 RCT_EXPORT_METHOD(getBiologicalSex:(NSDictionary *)input callback:(RCTResponseSenderBlock)callback)
 {
     [self characteristic_getBiologicalSex:input callback:callback];
@@ -101,6 +106,12 @@ RCT_EXPORT_METHOD(getLatestLeanBodyMass:(NSDictionary *)input callback:(RCTRespo
 {
     [self body_getLatestLeanBodyMass:input callback:callback];
 }
+
+RCT_EXPORT_METHOD(getActiveTime:(NSDictionary *)input callback:(RCTResponseSenderBlock)callback)
+{
+    [self fitness_getActiveTimeOnDay:input callback:callback];
+}
+
 
 RCT_EXPORT_METHOD(getStepCount:(NSDictionary *)input callback:(RCTResponseSenderBlock)callback)
 {

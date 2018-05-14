@@ -9,6 +9,7 @@ export const Permissions = {
   BasalEnergyBurned: "BasalEnergyBurned",
   BiologicalSex: "BiologicalSex",
   BloodGlucose: "BloodGlucose",
+  ActiveTime: "ActiveTime",
   BloodPressureDiastolic: "BloodPressureDiastolic",
   BloodPressureSystolic: "BloodPressureSystolic",
   BodyFatPercentage: "BodyFatPercentage",
