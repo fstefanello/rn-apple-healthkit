@@ -10,6 +10,9 @@
 #import "RCTAppleHealthKit+Queries.h"
 #import "RCTAppleHealthKit+Utils.h"
 
+#import <React/RCTBridgeModule.h>
+#import <React/RCTEventDispatcher.h>
+
 @implementation RCTAppleHealthKit (Queries)
 
 
@@ -109,10 +112,130 @@
 
 
 
+- (void)fetchSamplesOfType:(HKSampleType *)type
+                              unit:(HKUnit *)unit
+                         predicate:(NSPredicate *)predicate
+                         ascending:(BOOL)asc
+                             limit:(NSUInteger)lim
+                        completion:(void (^)(NSArray *, NSError *))completion {
+    NSSortDescriptor *timeSortDescriptor = [[NSSortDescriptor alloc] initWithKey:HKSampleSortIdentifierEndDate
+                                                                       ascending:asc];
+    
+    // declare the block
+    void (^handlerBlock)(HKSampleQuery *query, NSArray *results, NSError *error);
+    // create and assign the block
+    handlerBlock = ^(HKSampleQuery *query, NSArray *results, NSError *error) {
+        if (!results) {
+            if (completion) {
+                completion(nil, error);
+            }
+            return;
+        }
+        
+        if (completion) {
+            NSMutableArray *data = [NSMutableArray arrayWithCapacity:1];
+            
+            dispatch_async(dispatch_get_main_queue(), ^{
+                if (type == [HKObjectType workoutType]) {
+                    for (HKWorkout *sample in results) {
+                        double energy =  [[sample totalEnergyBurned] doubleValueForUnit:[HKUnit kilocalorieUnit]];
+                        double distance = [[sample totalDistance] doubleValueForUnit:[HKUnit mileUnit]];
+                        NSString *type = [RCTAppleHealthKit stringForHKWorkoutActivityType:[sample workoutActivityType]];
+                        
+                        NSString *startDateString = [RCTAppleHealthKit buildISO8601StringFromDate:sample.startDate];
+                        NSString *endDateString = [RCTAppleHealthKit buildISO8601StringFromDate:sample.endDate];
+                        
+                        bool isTracked = true;
+                        if ([[sample metadata][HKMetadataKeyWasUserEntered] intValue] == 1) {
+                            isTracked = false;
+                        }
+                        
+                        NSDictionary *elem = @{
+                                               @"activityName" : [NSNumber numberWithInt:[sample workoutActivityType]],
+                                               @"calories" : @(energy),
+                                               @"tracked" : @(isTracked),
+                                               @"sourceName" : [[[sample sourceRevision] source] name],
+                                               @"sourceId" : [[[sample sourceRevision] source] bundleIdentifier],
+                                               @"device": [[sample sourceRevision] productType],
+                                               @"distance" : @(distance),
+                                               @"start" : startDateString,
+                                               @"end" : endDateString
+                                               };
+                        
+                        [data addObject:elem];
+                    }
+                } else {
+                    for (HKQuantitySample *sample in results) {
+                        HKQuantity *quantity = sample.quantity;
+                        double value = [quantity doubleValueForUnit:unit];
+                        
+                        NSString * valueType = @"quantity";
+                        if (unit == [HKUnit mileUnit]) {
+                            valueType = @"distance";
+                        }
+                        
+                        NSString *startDateString = [RCTAppleHealthKit buildISO8601StringFromDate:sample.startDate];
+                        NSString *endDateString = [RCTAppleHealthKit buildISO8601StringFromDate:sample.endDate];
+                        
+                        bool isTracked = true;
+                        if ([[sample metadata][HKMetadataKeyWasUserEntered] intValue] == 1) {
+                            isTracked = false;
+                        }
+                        
+                        NSDictionary *elem = @{
+                                               valueType : @(value),
+                                               @"tracked" : @(isTracked),
+                                               @"sourceName" : [[[sample sourceRevision] source] name],
+                                               @"sourceId" : [[[sample sourceRevision] source] bundleIdentifier],
+                                               @"device": [[sample sourceRevision] productType],
+                                               @"start" : startDateString,
+                                               @"end" : endDateString
+                                               };
+                        
+                        [data addObject:elem];
+                    }
+                }
+                
+                completion(data, error);
+            });
+        }
+    };
+    
+    HKSampleQuery *query = [[HKSampleQuery alloc] initWithSampleType:type
+                                                           predicate:predicate
+                                                               limit:lim
+                                                     sortDescriptors:@[timeSortDescriptor]
+                                                      resultsHandler:handlerBlock];
+    
+    [self.healthStore executeQuery:query];
+}
 
-
-
-
+- (void)setObserverForType:(HKSampleType *)type
+                      unit:(HKUnit *)unit {
+    NSLog(@"set observer");
+    HKObserverQuery *query = [[HKObserverQuery alloc] initWithSampleType:type predicate:nil updateHandler:^(HKObserverQuery *query, HKObserverQueryCompletionHandler completionHandler, NSError * _Nullable error){
+        UIApplication *app = [UIApplication sharedApplication];
+        NSLog(@"observer fired");
+        [self.bridge.eventDispatcher sendAppEventWithName:@"observer"             body:@""];
+        completionHandler();
+//        self.isSync = true;
+//        __block UIBackgroundTaskIdentifier backgroundTaskIdentifier = [app beginBackgroundTaskWithExpirationHandler:^{
+//
+//            NSLog(@"observer fired from bg");
+//            [self.bridge.eventDispatcher sendAppEventWithName:@"observer"
+//                                                         body:@""];
+//
+//            [app endBackgroundTask:backgroundTaskIdentifier];
+//            completionHandler();
+//            self.isSync = false;
+//        }];
+    }];
+    
+    [self.healthStore executeQuery:query];
+    [self.healthStore enableBackgroundDeliveryForType:type frequency:HKUpdateFrequencyImmediate withCompletion:^(BOOL success, NSError * _Nullable error) {
+        NSLog(@"success %s print some error %@", success ? "true" : "false", [error localizedDescription]);
+    }];
+}
 
 - (void)fetchSleepCategorySamplesForPredicate:(NSPredicate *)predicate
                                    limit:(NSUInteger)lim

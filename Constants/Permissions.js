@@ -17,6 +17,7 @@ export const Permissions = {
   BodyMassIndex: "BodyMassIndex",
   BodyTemperature: "BodyTemperature",
   DateOfBirth: "DateOfBirth",
+  DietaryEnergy: "DietaryEnergy",
   Biotin: "Biotin",
   Caffeine: "Caffeine",
   Calcium: "Calcium",
@@ -67,5 +68,6 @@ export const Permissions = {
   SleepAnalysis: "SleepAnalysis",
   StepCount: "StepCount",
   Steps: "Steps",
-  Weight: "Weight"
+  Weight: "Weight",
+  Workout: "Workout"
 }

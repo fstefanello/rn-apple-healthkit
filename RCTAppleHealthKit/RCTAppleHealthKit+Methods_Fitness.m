@@ -49,6 +49,72 @@
     }];
 }
 
+- (void)fitness_getSamples:(NSDictionary *)input callback:(RCTResponseSenderBlock)callback
+{
+    HKUnit *unit = [RCTAppleHealthKit hkUnitFromOptions:input key:@"unit" withDefault:[HKUnit countUnit]];
+    NSUInteger limit = [RCTAppleHealthKit uintFromOptions:input key:@"limit" withDefault:HKObjectQueryNoLimit];
+    BOOL ascending = [RCTAppleHealthKit boolFromOptions:input key:@"ascending" withDefault:false];
+    NSString *type = [RCTAppleHealthKit stringFromOptions:input key:@"type" withDefault:@"Walking"];
+    NSDate *startDate = [RCTAppleHealthKit dateFromOptions:input key:@"startDate" withDefault:[NSDate date]];
+    NSDate *endDate = [RCTAppleHealthKit dateFromOptions:input key:@"endDate" withDefault:[NSDate date]];
+    
+    NSPredicate *predicate = [HKQuery predicateForSamplesWithStartDate:startDate endDate:endDate options:HKQueryOptionStrictStartDate];
+    
+    HKSampleType *samplesType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierStepCount];
+    if ([type isEqual:@"Walking"]) {
+        samplesType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierStepCount];
+    } else if ([type isEqual:@"StairClimbing"]) {
+        samplesType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierFlightsClimbed];
+    } else if ([type isEqual:@"Running"]){
+        samplesType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDistanceWalkingRunning];
+        unit = [HKUnit mileUnit];
+    } else if ([type isEqual:@"Cycling"]){
+        samplesType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDistanceCycling];
+        unit = [HKUnit mileUnit];
+    } else if ([type isEqual:@"Workout"]){
+        samplesType = [HKObjectType workoutType];
+    }
+    
+    [self fetchSamplesOfType:samplesType
+                                unit:unit
+                           predicate:predicate
+                           ascending:ascending
+                               limit:limit
+                          completion:^(NSArray *results, NSError *error) {
+                              if(results){
+                                  callback(@[[NSNull null], results]);
+                                  return;
+                              } else {
+                                  NSLog(@"error getting active energy burned samples: %@", error);
+                                  callback(@[RCTMakeError(@"error getting active energy burned samples", nil, nil)]);
+                                  return;
+                              }
+                          }];
+}
+
+- (void)fitness_setObserver:(NSDictionary *)input
+{
+    HKUnit *unit = [RCTAppleHealthKit hkUnitFromOptions:input key:@"unit" withDefault:[HKUnit countUnit]];
+    NSString *type = [RCTAppleHealthKit stringFromOptions:input key:@"type" withDefault:@"Walking"];
+    
+    HKSampleType *samplesType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierStepCount];
+    if ([type isEqual:@"Walking"]) {
+        samplesType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierStepCount];
+    } else if ([type isEqual:@"StairClimbing"]) {
+        samplesType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierFlightsClimbed];
+    } else if ([type isEqual:@"Running"]){
+        samplesType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDistanceWalkingRunning];
+        unit = [HKUnit mileUnit];
+    } else if ([type isEqual:@"Cycling"]){
+        samplesType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDistanceCycling];
+        unit = [HKUnit mileUnit];
+    } else if ([type isEqual:@"Workout"]){
+        samplesType = [HKObjectType workoutType];
+    }
+    
+    [self setObserverForType:samplesType unit:unit];
+}
+
 - (void)fitness_getActiveTimeOnDay:(NSDictionary *)input callback:(RCTResponseSenderBlock)callback
 {
     NSDate *date = [RCTAppleHealthKit dateFromOptions:input key:@"date" withDefault:[NSDate date]];
