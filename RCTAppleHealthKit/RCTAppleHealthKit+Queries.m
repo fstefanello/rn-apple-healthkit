@@ -159,7 +159,7 @@
                                                @"device": [[sample sourceRevision] productType],
                                                @"distance" : @(distance),
                                                @"start" : startDateString,
-                                               @"end" : endDateString
+                                               @"end" : endDateString,
                                                @"type" : type
                                                };
                         
