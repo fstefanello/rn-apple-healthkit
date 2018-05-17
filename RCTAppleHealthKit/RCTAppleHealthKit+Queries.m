@@ -160,6 +160,7 @@
                                                @"distance" : @(distance),
                                                @"start" : startDateString,
                                                @"end" : endDateString
+                                               @"type" : type
                                                };
                         
                         [data addObject:elem];
