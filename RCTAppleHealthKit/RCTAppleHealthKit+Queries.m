@@ -120,7 +120,7 @@
                         completion:(void (^)(NSArray *, NSError *))completion {
     NSSortDescriptor *timeSortDescriptor = [[NSSortDescriptor alloc] initWithKey:HKSampleSortIdentifierEndDate
                                                                        ascending:asc];
-    
+
     // declare the block
     void (^handlerBlock)(HKSampleQuery *query, NSArray *results, NSError *error);
     // create and assign the block
@@ -131,25 +131,25 @@
             }
             return;
         }
-        
+
         if (completion) {
             NSMutableArray *data = [NSMutableArray arrayWithCapacity:1];
-            
+
             dispatch_async(dispatch_get_main_queue(), ^{
                 if (type == [HKObjectType workoutType]) {
                     for (HKWorkout *sample in results) {
                         double energy =  [[sample totalEnergyBurned] doubleValueForUnit:[HKUnit kilocalorieUnit]];
-                        double distance = [[sample totalDistance] doubleValueForUnit:[HKUnit meterUnit]];
+                        double distance = [[sample totalDistance] doubleValueForUnit:[HKUnit mileUnit]];
                         NSString *type = [RCTAppleHealthKit stringForHKWorkoutActivityType:[sample workoutActivityType]];
-                        
+
                         NSString *startDateString = [RCTAppleHealthKit buildISO8601StringFromDate:sample.startDate];
                         NSString *endDateString = [RCTAppleHealthKit buildISO8601StringFromDate:sample.endDate];
-                        
+
                         bool isTracked = true;
                         if ([[sample metadata][HKMetadataKeyWasUserEntered] intValue] == 1) {
                             isTracked = false;
                         }
-                        
+
                         NSDictionary *elem = @{
                                                @"activityName" : [NSNumber numberWithInt:[sample workoutActivityType]],
                                                @"calories" : @(energy),
@@ -161,27 +161,27 @@
                                                @"start" : startDateString,
                                                @"end" : endDateString
                                                };
-                        
+
                         [data addObject:elem];
                     }
                 } else {
                     for (HKQuantitySample *sample in results) {
                         HKQuantity *quantity = sample.quantity;
                         double value = [quantity doubleValueForUnit:unit];
-                        
+
                         NSString * valueType = @"quantity";
                         if (unit == [HKUnit mileUnit]) {
                             valueType = @"distance";
                         }
-                        
+
                         NSString *startDateString = [RCTAppleHealthKit buildISO8601StringFromDate:sample.startDate];
                         NSString *endDateString = [RCTAppleHealthKit buildISO8601StringFromDate:sample.endDate];
-                        
+
                         bool isTracked = true;
                         if ([[sample metadata][HKMetadataKeyWasUserEntered] intValue] == 1) {
                             isTracked = false;
                         }
-                        
+
                         NSDictionary *elem = @{
                                                valueType : @(value),
                                                @"tracked" : @(isTracked),
@@ -191,22 +191,22 @@
                                                @"start" : startDateString,
                                                @"end" : endDateString
                                                };
-                        
+
                         [data addObject:elem];
                     }
                 }
-                
+
                 completion(data, error);
             });
         }
     };
-    
+
     HKSampleQuery *query = [[HKSampleQuery alloc] initWithSampleType:type
                                                            predicate:predicate
                                                                limit:lim
                                                      sortDescriptors:@[timeSortDescriptor]
                                                       resultsHandler:handlerBlock];
-    
+
     [self.healthStore executeQuery:query];
 }
 
@@ -230,7 +230,7 @@
 //            self.isSync = false;
 //        }];
     }];
-    
+
     [self.healthStore executeQuery:query];
     [self.healthStore enableBackgroundDeliveryForType:type frequency:HKUpdateFrequencyImmediate withCompletion:^(BOOL success, NSError * _Nullable error) {
         NSLog(@"success %s print some error %@", success ? "true" : "false", [error localizedDescription]);
