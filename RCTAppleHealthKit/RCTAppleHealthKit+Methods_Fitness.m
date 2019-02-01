@@ -20,7 +20,7 @@
 - (void)fitness_getStepCountOnDay:(NSDictionary *)input callback:(RCTResponseSenderBlock)callback
 {
     NSDate *date = [RCTAppleHealthKit dateFromOptions:input key:@"date" withDefault:[NSDate date]];
-
+    BOOL skipManual = [RCTAppleHealthKit boolFromOptions:input key:@"skipManual" withDefault:FALSE];
     if(date == nil) {
         callback(@[RCTMakeError(@"could not parse date from options.date", nil, nil)]);
         return;
@@ -29,9 +29,7 @@
     HKQuantityType *stepCountType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierStepCount];
     HKUnit *stepsUnit = [HKUnit countUnit];
 
-    [self fetchSumOfSamplesOnDayForType:stepCountType
-                                   unit:stepsUnit
-                                    day:date
+    [self fetchSumOfSamplesOnDayForType:stepCountType unit:stepsUnit day:date skipManual:skipManual
                              completion:^(double value, NSDate *startDate, NSDate *endDate, NSError *error) {
         if (!value) {
             NSLog(@"could not fetch step count for day: %@", error);
@@ -49,103 +47,32 @@
     }];
 }
 
-- (void)fitness_getSamples:(NSDictionary *)input callback:(RCTResponseSenderBlock)callback
-{
-    HKUnit *unit = [RCTAppleHealthKit hkUnitFromOptions:input key:@"unit" withDefault:[HKUnit countUnit]];
-    NSUInteger limit = [RCTAppleHealthKit uintFromOptions:input key:@"limit" withDefault:HKObjectQueryNoLimit];
-    BOOL ascending = [RCTAppleHealthKit boolFromOptions:input key:@"ascending" withDefault:false];
-    NSString *type = [RCTAppleHealthKit stringFromOptions:input key:@"type" withDefault:@"Walking"];
-    NSDate *startDate = [RCTAppleHealthKit dateFromOptions:input key:@"startDate" withDefault:[NSDate date]];
-    NSDate *endDate = [RCTAppleHealthKit dateFromOptions:input key:@"endDate" withDefault:[NSDate date]];
-    
-    NSPredicate *predicate = [HKQuery predicateForSamplesWithStartDate:startDate endDate:endDate options:HKQueryOptionStrictStartDate];
-    
-    HKSampleType *samplesType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierStepCount];
-    if ([type isEqual:@"Walking"]) {
-        samplesType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierStepCount];
-    } else if ([type isEqual:@"StairClimbing"]) {
-        samplesType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierFlightsClimbed];
-    } else if ([type isEqual:@"Running"]){
-        samplesType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDistanceWalkingRunning];
-        unit = [HKUnit mileUnit];
-    } else if ([type isEqual:@"Cycling"]){
-        samplesType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDistanceCycling];
-        unit = [HKUnit mileUnit];
-    } else if ([type isEqual:@"Workout"]){
-        samplesType = [HKObjectType workoutType];
-    }
-    
-    [self fetchSamplesOfType:samplesType
-                                unit:unit
-                           predicate:predicate
-                           ascending:ascending
-                               limit:limit
-                          completion:^(NSArray *results, NSError *error) {
-                              if(results){
-                                  callback(@[[NSNull null], results]);
-                                  return;
-                              } else {
-                                  NSLog(@"error getting active energy burned samples: %@", error);
-                                  callback(@[RCTMakeError(@"error getting active energy burned samples", nil, nil)]);
-                                  return;
-                              }
-                          }];
-}
 
-- (void)fitness_setObserver:(NSDictionary *)input
-{
-    HKUnit *unit = [RCTAppleHealthKit hkUnitFromOptions:input key:@"unit" withDefault:[HKUnit countUnit]];
-    NSString *type = [RCTAppleHealthKit stringFromOptions:input key:@"type" withDefault:@"Walking"];
-    
-    HKSampleType *samplesType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierStepCount];
-    if ([type isEqual:@"Walking"]) {
-        samplesType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierStepCount];
-    } else if ([type isEqual:@"StairClimbing"]) {
-        samplesType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierFlightsClimbed];
-    } else if ([type isEqual:@"Running"]){
-        samplesType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDistanceWalkingRunning];
-        unit = [HKUnit mileUnit];
-    } else if ([type isEqual:@"Cycling"]){
-        samplesType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDistanceCycling];
-        unit = [HKUnit mileUnit];
-    } else if ([type isEqual:@"Workout"]){
-        samplesType = [HKObjectType workoutType];
-    }
-    
-    [self setObserverForType:samplesType unit:unit];
-}
-
-- (void)fitness_getActiveTimeOnDay:(NSDictionary *)input callback:(RCTResponseSenderBlock)callback
+- (void)fitness_getHourlyStepCountOnDay:(NSDictionary *)input callback:(RCTResponseSenderBlock)callback
 {
     NSDate *date = [RCTAppleHealthKit dateFromOptions:input key:@"date" withDefault:[NSDate date]];
-    
-    if(date == nil) {
+    NSUInteger interval = [RCTAppleHealthKit uintFromOptions:input key:@"interval" withDefault:60];
+
+    if (date == nil) {
         callback(@[RCTMakeError(@"could not parse date from options.date", nil, nil)]);
         return;
     }
-    
-    HKQuantityType *minutesCountType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierAppleExerciseTime ];
-    HKUnit *stepsUnit = [HKUnit minuteUnit];
-    
-    [self fetchSumOfSamplesOnDayForType:minutesCountType
+
+    HKQuantityType *stepCountType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierStepCount];
+    HKUnit *stepsUnit = [HKUnit countUnit];
+
+    [self fetchHourlySamplesOnDayForType:stepCountType
                                     unit:stepsUnit
-                                    day:date
-                                    completion:^(double value, NSDate *startDate, NSDate *endDate, NSError *error) {
-                                 
-                                        if (!value) {
-                                            NSLog(@"could not fetch step count for day: %@", error);
-                                            callback(@[RCTMakeError(@"could not fetch step count for day", error, nil)]);
-                                            return;
-                                        }
-                                 
-                                        NSDictionary *response = @{
-                                                            @"value" : @(value),
-                                                            @"startDate" : [RCTAppleHealthKit buildISO8601StringFromDate:startDate],
-                                                            @"endDate" : [RCTAppleHealthKit buildISO8601StringFromDate:endDate],
-                                                            };
-                                 
-                                        callback(@[[NSNull null], response]);
-                             }];
+                                     day:date
+                                interval:interval
+                              completion:^(NSArray *arr, NSError *err) {
+                                  if (err != nil) {
+                                      NSLog(@"error with fetchHourlySamplesOnDayForType: %@", err);
+                                      callback(@[RCTMakeError(@"error with fetchHourlySamplesOnDayForType", err, nil)]);
+                                      return;
+                                  }
+                                  callback(@[[NSNull null], arr]);
+                              }];
 }
 
 
@@ -241,50 +168,16 @@
       }];
 }
 
-- (void)fitness_initializeActiveTimeEventObserver:(NSDictionary *)input callback:(RCTResponseSenderBlock)callback
-{
-    HKSampleType *sampleType =
-    [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierAppleExerciseTime];
-    
-    HKObserverQuery *query =
-    [[HKObserverQuery alloc]
-     initWithSampleType:sampleType
-     predicate:nil
-     updateHandler:^(HKObserverQuery *query,
-                     HKObserverQueryCompletionHandler completionHandler,
-                     NSError *error) {
-         
-         if (error) {
-             // Perform Proper Error Handling Here...
-             NSLog(@"*** An error occured while setting up the stepCount observer. %@ ***", error.localizedDescription);
-             callback(@[RCTMakeError(@"An error occured while setting up the stepCount observer", error, nil)]);
-             return;
-         }
-         
-         [self.bridge.eventDispatcher sendAppEventWithName:@"change:activetime"
-                                                      body:@{@"name": @"change:activetime"}];
-         
-         // If you have subscribed for background updates you must call the completion handler here.
-         completionHandler();
-         
-     }];
-    
-    [self.healthStore executeQuery:query];
-    [self.healthStore enableBackgroundDeliveryForType:sampleType frequency:HKUpdateFrequencyHourly withCompletion:^(BOOL succeeded,NSError *error){
-        return;
-    }];
-}
-
-
 
 - (void)fitness_getDistanceWalkingRunningOnDay:(NSDictionary *)input callback:(RCTResponseSenderBlock)callback
 {
     HKUnit *unit = [RCTAppleHealthKit hkUnitFromOptions:input key:@"unit" withDefault:[HKUnit meterUnit]];
     NSDate *date = [RCTAppleHealthKit dateFromOptions:input key:@"date" withDefault:[NSDate date]];
+    BOOL skipManual = [RCTAppleHealthKit boolFromOptions:input key:@"skipManual" withDefault:FALSE];
 
     HKQuantityType *quantityType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDistanceWalkingRunning];
 
-    [self fetchSumOfSamplesOnDayForType:quantityType unit:unit day:date completion:^(double distance, NSDate *startDate, NSDate *endDate, NSError *error) {
+    [self fetchSumOfSamplesOnDayForType:quantityType unit:unit day:date skipManual:skipManual completion:^(double distance, NSDate *startDate, NSDate *endDate, NSError *error) {
         if (!distance) {
             NSLog(@"ERROR getting DistanceWalkingRunning: %@", error);
             callback(@[RCTMakeError(@"ERROR getting DistanceWalkingRunning", error, nil)]);
@@ -302,15 +195,45 @@
     }];
 }
 
+- (void)fitness_getDailyDistanceWalkingRunningSamples:(NSDictionary *)input callback:(RCTResponseSenderBlock)callback
+{
+    HKUnit *unit = [RCTAppleHealthKit hkUnitFromOptions:input key:@"unit" withDefault:[HKUnit meterUnit]];
+    NSUInteger limit = [RCTAppleHealthKit uintFromOptions:input key:@"limit" withDefault:HKObjectQueryNoLimit];
+    BOOL ascending = [RCTAppleHealthKit boolFromOptions:input key:@"ascending" withDefault:false];
+    NSDate *startDate = [RCTAppleHealthKit dateFromOptions:input key:@"startDate" withDefault:nil];
+    NSDate *endDate = [RCTAppleHealthKit dateFromOptions:input key:@"endDate" withDefault:[NSDate date]];
+    if(startDate == nil){
+        callback(@[RCTMakeError(@"startDate is required in options", nil, nil)]);
+        return;
+    }
+    
+    HKQuantityType *quantityType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDistanceWalkingRunning];
+    
+    [self fetchCumulativeSumStatisticsCollection:quantityType
+                                            unit:unit
+                                       startDate:startDate
+                                         endDate:endDate
+                                       ascending:ascending
+                                           limit:limit
+                                      completion:^(NSArray *arr, NSError *err){
+                                          if (err != nil) {
+                                              NSLog(@"error with fetchCumulativeSumStatisticsCollection: %@", err);
+                                              callback(@[RCTMakeError(@"error with fetchCumulativeSumStatisticsCollection", err, nil)]);
+                                              return;
+                                          }
+                                          callback(@[[NSNull null], arr]);
+                                      }];
+}
 
 - (void)fitness_getDistanceCyclingOnDay:(NSDictionary *)input callback:(RCTResponseSenderBlock)callback
 {
     HKUnit *unit = [RCTAppleHealthKit hkUnitFromOptions:input key:@"unit" withDefault:[HKUnit meterUnit]];
     NSDate *date = [RCTAppleHealthKit dateFromOptions:input key:@"date" withDefault:[NSDate date]];
+    BOOL skipManual = [RCTAppleHealthKit boolFromOptions:input key:@"skipManual" withDefault:FALSE];
 
     HKQuantityType *quantityType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDistanceCycling];
 
-    [self fetchSumOfSamplesOnDayForType:quantityType unit:unit day:date completion:^(double distance, NSDate *startDate, NSDate *endDate, NSError *error) {
+    [self fetchSumOfSamplesOnDayForType:quantityType unit:unit day:date skipManual:skipManual completion:^(double distance, NSDate *startDate, NSDate *endDate, NSError *error) {
         if (!distance) {
             NSLog(@"ERROR getting DistanceCycling: %@", error);
             callback(@[RCTMakeError(@"ERROR getting DistanceCycling", error, nil)]);
@@ -327,15 +250,44 @@
     }];
 }
 
+- (void)fitness_getDailyDistanceCyclingSamples:(NSDictionary *)input callback:(RCTResponseSenderBlock)callback
+{
+    HKUnit *unit = [RCTAppleHealthKit hkUnitFromOptions:input key:@"unit" withDefault:[HKUnit meterUnit]];
+    NSUInteger limit = [RCTAppleHealthKit uintFromOptions:input key:@"limit" withDefault:HKObjectQueryNoLimit];
+    BOOL ascending = [RCTAppleHealthKit boolFromOptions:input key:@"ascending" withDefault:false];
+    NSDate *startDate = [RCTAppleHealthKit dateFromOptions:input key:@"startDate" withDefault:nil];
+    NSDate *endDate = [RCTAppleHealthKit dateFromOptions:input key:@"endDate" withDefault:[NSDate date]];
+    if(startDate == nil){
+        callback(@[RCTMakeError(@"startDate is required in options", nil, nil)]);
+        return;
+    }
+    
+    HKQuantityType *quantityType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDistanceCycling];
+    
+    [self fetchCumulativeSumStatisticsCollection:quantityType
+                                            unit:unit
+                                       startDate:startDate
+                                         endDate:endDate
+                                       ascending:ascending
+                                           limit:limit
+                                      completion:^(NSArray *arr, NSError *err){
+                                          if (err != nil) {
+                                              NSLog(@"error with fetchCumulativeSumStatisticsCollection: %@", err);
+                                              callback(@[RCTMakeError(@"error with fetchCumulativeSumStatisticsCollection", err, nil)]);
+                                              return;
+                                          }
+                                          callback(@[[NSNull null], arr]);
+                                      }];
+}
 
 - (void)fitness_getFlightsClimbedOnDay:(NSDictionary *)input callback:(RCTResponseSenderBlock)callback
 {
     HKUnit *unit = [HKUnit countUnit];
     NSDate *date = [RCTAppleHealthKit dateFromOptions:input key:@"date" withDefault:[NSDate date]];
-
+    BOOL skipManual = [RCTAppleHealthKit boolFromOptions:input key:@"skipManual" withDefault:FALSE];
     HKQuantityType *quantityType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierFlightsClimbed];
 
-    [self fetchSumOfSamplesOnDayForType:quantityType unit:unit day:date completion:^(double count, NSDate *startDate, NSDate *endDate, NSError *error) {
+    [self fetchSumOfSamplesOnDayForType:quantityType unit:unit day:date skipManual:skipManual completion:^(double count, NSDate *startDate, NSDate *endDate, NSError *error) {
         if (!count) {
             NSLog(@"ERROR getting FlightsClimbed: %@", error);
             callback(@[RCTMakeError(@"ERROR getting FlightsClimbed", error, nil), @(count)]);
@@ -349,6 +301,170 @@
         };
 
         callback(@[[NSNull null], response]);
+    }];
+}
+
+- (void)fitness_getDailyFlightsClimbedSamples:(NSDictionary *)input callback:(RCTResponseSenderBlock)callback
+{
+    HKUnit *unit = [RCTAppleHealthKit hkUnitFromOptions:input key:@"unit" withDefault:[HKUnit countUnit]];
+    NSUInteger limit = [RCTAppleHealthKit uintFromOptions:input key:@"limit" withDefault:HKObjectQueryNoLimit];
+    BOOL ascending = [RCTAppleHealthKit boolFromOptions:input key:@"ascending" withDefault:false];
+    NSDate *startDate = [RCTAppleHealthKit dateFromOptions:input key:@"startDate" withDefault:nil];
+    NSDate *endDate = [RCTAppleHealthKit dateFromOptions:input key:@"endDate" withDefault:[NSDate date]];
+    if(startDate == nil){
+        callback(@[RCTMakeError(@"startDate is required in options", nil, nil)]);
+        return;
+    }
+    
+    HKQuantityType *quantityType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierFlightsClimbed];
+    
+    [self fetchCumulativeSumStatisticsCollection:quantityType
+                                            unit:unit
+                                       startDate:startDate
+                                         endDate:endDate
+                                       ascending:ascending
+                                           limit:limit
+                                      completion:^(NSArray *arr, NSError *err){
+                                          if (err != nil) {
+                                              NSLog(@"error with fetchCumulativeSumStatisticsCollection: %@", err);
+                                              callback(@[RCTMakeError(@"error with fetchCumulativeSumStatisticsCollection", err, nil)]);
+                                              return;
+                                          }
+                                          callback(@[[NSNull null], arr]);
+                                      }];
+}
+
+
+- (void)fitness_getActiveTimeOnDay:(NSDictionary *)input callback:(RCTResponseSenderBlock)callback
+{
+  NSDate *date = [RCTAppleHealthKit dateFromOptions:input key:@"date" withDefault:[NSDate date]];
+
+  if(date == nil) {
+    callback(@[RCTMakeError(@"could not parse date from options.date", nil, nil)]);
+    return;
+  }
+
+  HKQuantityType *minutesCountType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierAppleExerciseTime ];
+  HKUnit *stepsUnit = [HKUnit minuteUnit];
+
+  [self fetchSumOfSamplesOnDayForType:minutesCountType
+  unit:stepsUnit
+  day:date
+  completion:^(double value, NSDate *startDate, NSDate *endDate, NSError *error) {
+
+    if (!value) {
+      NSLog(@"could not fetch step count for day: %@", error);
+      callback(@[RCTMakeError(@"could not fetch step count for day", error, nil)]);
+      return;
+    }
+
+    NSDictionary *response = @{
+      @"value" : @(value),
+      @"startDate" : [RCTAppleHealthKit buildISO8601StringFromDate:startDate],
+      @"endDate" : [RCTAppleHealthKit buildISO8601StringFromDate:endDate],
+    };
+
+    callback(@[[NSNull null], response]);
+  }];
+}
+
+- (void)fitness_getSamples:(NSDictionary *)input callback:(RCTResponseSenderBlock)callback
+{
+    HKUnit *unit = [RCTAppleHealthKit hkUnitFromOptions:input key:@"unit" withDefault:[HKUnit countUnit]];
+    NSUInteger limit = [RCTAppleHealthKit uintFromOptions:input key:@"limit" withDefault:HKObjectQueryNoLimit];
+    BOOL ascending = [RCTAppleHealthKit boolFromOptions:input key:@"ascending" withDefault:false];
+    NSString *type = [RCTAppleHealthKit stringFromOptions:input key:@"type" withDefault:@"Walking"];
+    NSDate *startDate = [RCTAppleHealthKit dateFromOptions:input key:@"startDate" withDefault:[NSDate date]];
+    NSDate *endDate = [RCTAppleHealthKit dateFromOptions:input key:@"endDate" withDefault:[NSDate date]];
+
+    NSPredicate *predicate = [HKQuery predicateForSamplesWithStartDate:startDate endDate:endDate options:HKQueryOptionStrictStartDate];
+
+    HKSampleType *samplesType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierStepCount];
+    if ([type isEqual:@"Walking"]) {
+        samplesType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierStepCount];
+    } else if ([type isEqual:@"StairClimbing"]) {
+        samplesType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierFlightsClimbed];
+    } else if ([type isEqual:@"Running"]){
+        samplesType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDistanceWalkingRunning];
+        unit = [HKUnit mileUnit];
+    } else if ([type isEqual:@"Cycling"]){
+        samplesType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDistanceCycling];
+        unit = [HKUnit mileUnit];
+    } else if ([type isEqual:@"Workout"]){
+        samplesType = [HKObjectType workoutType];
+    }
+
+    [self fetchSamplesOfType:samplesType
+                                unit:unit
+                           predicate:predicate
+                           ascending:ascending
+                               limit:limit
+                          completion:^(NSArray *results, NSError *error) {
+                              if(results){
+                                  callback(@[[NSNull null], results]);
+                                  return;
+                              } else {
+                                  NSLog(@"error getting active energy burned samples: %@", error);
+                                  callback(@[RCTMakeError(@"error getting active energy burned samples", nil, nil)]);
+                                  return;
+                              }
+                          }];
+}
+
+- (void)fitness_setObserver:(NSDictionary *)input
+{
+    HKUnit *unit = [RCTAppleHealthKit hkUnitFromOptions:input key:@"unit" withDefault:[HKUnit countUnit]];
+    NSString *type = [RCTAppleHealthKit stringFromOptions:input key:@"type" withDefault:@"Walking"];
+
+    HKSampleType *samplesType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierStepCount];
+    if ([type isEqual:@"Walking"]) {
+        samplesType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierStepCount];
+    } else if ([type isEqual:@"StairClimbing"]) {
+        samplesType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierFlightsClimbed];
+    } else if ([type isEqual:@"Running"]){
+        samplesType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDistanceWalkingRunning];
+        unit = [HKUnit mileUnit];
+    } else if ([type isEqual:@"Cycling"]){
+        samplesType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDistanceCycling];
+        unit = [HKUnit mileUnit];
+    } else if ([type isEqual:@"Workout"]){
+        samplesType = [HKObjectType workoutType];
+    }
+
+    [self setObserverForType:samplesType unit:unit];
+}
+
+- (void)fitness_initializeActiveTimeEventObserver:(NSDictionary *)input callback:(RCTResponseSenderBlock)callback
+{
+    HKSampleType *sampleType =
+    [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierAppleExerciseTime];
+
+    HKObserverQuery *query =
+    [[HKObserverQuery alloc]
+     initWithSampleType:sampleType
+     predicate:nil
+     updateHandler:^(HKObserverQuery *query,
+                     HKObserverQueryCompletionHandler completionHandler,
+                     NSError *error) {
+
+         if (error) {
+             // Perform Proper Error Handling Here...
+             NSLog(@"*** An error occured while setting up the stepCount observer. %@ ***", error.localizedDescription);
+             callback(@[RCTMakeError(@"An error occured while setting up the stepCount observer", error, nil)]);
+             return;
+         }
+
+         [self.bridge.eventDispatcher sendAppEventWithName:@"change:activetime"
+                                                      body:@{@"name": @"change:activetime"}];
+
+         // If you have subscribed for background updates you must call the completion handler here.
+         completionHandler();
+
+     }];
+
+    [self.healthStore executeQuery:query];
+    [self.healthStore enableBackgroundDeliveryForType:sampleType frequency:HKUpdateFrequencyHourly withCompletion:^(BOOL succeeded,NSError *error){
+        return;
     }];
 }
 

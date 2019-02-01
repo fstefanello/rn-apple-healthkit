@@ -37,19 +37,9 @@ RCT_EXPORT_METHOD(initHealthKit:(NSDictionary *)input callback:(RCTResponseSende
     [self initializeHealthKit:input callback:callback];
 }
 
-RCT_EXPORT_METHOD(checkSharePermission:(NSString *)input callback:(RCTResponseSenderBlock)callback)
-{
-    [self checkPermission:input callback:callback];
-}
-
 RCT_EXPORT_METHOD(initStepCountObserver:(NSDictionary *)input callback:(RCTResponseSenderBlock)callback)
 {
     [self fitness_initializeStepEventObserver:input callback:callback];
-}
-
-RCT_EXPORT_METHOD(initActiveTimeObserver:(NSDictionary *)input callback:(RCTResponseSenderBlock)callback)
-{
-    [self fitness_initializeActiveTimeEventObserver:input callback:callback];
 }
 
 RCT_EXPORT_METHOD(getBiologicalSex:(NSDictionary *)input callback:(RCTResponseSenderBlock)callback)
@@ -112,25 +102,14 @@ RCT_EXPORT_METHOD(getLatestLeanBodyMass:(NSDictionary *)input callback:(RCTRespo
     [self body_getLatestLeanBodyMass:input callback:callback];
 }
 
-RCT_EXPORT_METHOD(getActiveTime:(NSDictionary *)input callback:(RCTResponseSenderBlock)callback)
-{
-    [self fitness_getActiveTimeOnDay:input callback:callback];
-}
-
-
 RCT_EXPORT_METHOD(getStepCount:(NSDictionary *)input callback:(RCTResponseSenderBlock)callback)
 {
     [self fitness_getStepCountOnDay:input callback:callback];
 }
 
-RCT_EXPORT_METHOD(getSamples:(NSDictionary *)input callback:(RCTResponseSenderBlock)callback)
+RCT_EXPORT_METHOD(getHourlyStepCount:(NSDictionary *)input callback:(RCTResponseSenderBlock)callback)
 {
-    [self fitness_getSamples:input callback:callback];
-}
-
-RCT_EXPORT_METHOD(setObserver:(NSDictionary *)input)
-{
-    [self fitness_setObserver:input];
+    [self fitness_getHourlyStepCountOnDay:input callback:callback];
 }
 
 RCT_EXPORT_METHOD(getDailyStepCountSamples:(NSDictionary *)input callback:(RCTResponseSenderBlock)callback)
@@ -148,14 +127,29 @@ RCT_EXPORT_METHOD(getDistanceWalkingRunning:(NSDictionary *)input callback:(RCTR
     [self fitness_getDistanceWalkingRunningOnDay:input callback:callback];
 }
 
+RCT_EXPORT_METHOD(getDailyDistanceWalkingRunningSamples:(NSDictionary *)input callback:(RCTResponseSenderBlock)callback)
+{
+    [self fitness_getDailyDistanceWalkingRunningSamples:input callback:callback];
+}
+
 RCT_EXPORT_METHOD(getDistanceCycling:(NSDictionary *)input callback:(RCTResponseSenderBlock)callback)
 {
     [self fitness_getDistanceCyclingOnDay:input callback:callback];
 }
 
+RCT_EXPORT_METHOD(getDailyDistanceCyclingSamples:(NSDictionary *)input callback:(RCTResponseSenderBlock)callback)
+{
+    [self fitness_getDailyDistanceCyclingSamples:input callback:callback];
+}
+
 RCT_EXPORT_METHOD(getFlightsClimbed:(NSDictionary *)input callback:(RCTResponseSenderBlock)callback)
 {
     [self fitness_getFlightsClimbedOnDay:input callback:callback];
+}
+
+RCT_EXPORT_METHOD(getDailyFlightsClimbedSamples:(NSDictionary *)input callback:(RCTResponseSenderBlock)callback)
+{
+    [self fitness_getDailyFlightsClimbedSamples:input callback:callback];
 }
 
 RCT_EXPORT_METHOD(saveFood:(NSDictionary *)input callback:(RCTResponseSenderBlock)callback)
@@ -176,6 +170,11 @@ RCT_EXPORT_METHOD(getHeartRateSamples:(NSDictionary *)input callback:(RCTRespons
 RCT_EXPORT_METHOD(getActiveEnergyBurned:(NSDictionary *)input callback:(RCTResponseSenderBlock)callback)
 {
    [self activity_getActiveEnergyBurned:input callback:callback];
+}
+
+RCT_EXPORT_METHOD(getBasalEnergyBurned:(NSDictionary *)input callback:(RCTResponseSenderBlock)callback)
+{
+    [self activity_getBasalEnergyBurned:input callback:callback];
 }
 
 RCT_EXPORT_METHOD(getBodyTemperatureSamples:(NSDictionary *)input callback:(RCTResponseSenderBlock)callback)
@@ -213,6 +212,30 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
     [self mindfulness_saveMindfulSession:input callback:callback];
 }
 
+RCT_EXPORT_METHOD(checkSharePermission:(NSString *)input callback:(RCTResponseSenderBlock)callback)
+{
+    [self checkPermission:input callback:callback];
+}
+
+RCT_EXPORT_METHOD(initActiveTimeObserver:(NSDictionary *)input callback:(RCTResponseSenderBlock)callback)
+{
+    [self fitness_initializeActiveTimeEventObserver:input callback:callback];
+}
+
+RCT_EXPORT_METHOD(getActiveTime:(NSDictionary *)input callback:(RCTResponseSenderBlock)callback)
+{
+    [self fitness_getActiveTimeOnDay:input callback:callback];
+}
+
+RCT_EXPORT_METHOD(getSamples:(NSDictionary *)input callback:(RCTResponseSenderBlock)callback)
+{
+    [self fitness_getSamples:input callback:callback];
+}
+
+RCT_EXPORT_METHOD(setObserver:(NSDictionary *)input)
+{
+    [self fitness_setObserver:input];
+}
 
 - (void)isHealthKitAvailable:(RCTResponseSenderBlock)callback
 {

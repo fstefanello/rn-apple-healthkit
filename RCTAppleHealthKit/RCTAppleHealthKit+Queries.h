@@ -13,24 +13,17 @@
 
 - (void)fetchMostRecentQuantitySampleOfType:(HKQuantityType *)quantityType predicate:(NSPredicate *)predicate completion:(void (^)(HKQuantity *mostRecentQuantity, NSDate *startDate, NSDate *endDate, NSError *error))completion;
 - (void)fetchSumOfSamplesTodayForType:(HKQuantityType *)quantityType unit:(HKUnit *)unit completion:(void (^)(double, NSError *))completionHandler;
-- (void)fetchSumOfSamplesOnDayForType:(HKQuantityType *)quantityType unit:(HKUnit *)unit day:(NSDate *)day completion:(void (^)(double, NSDate *, NSDate *, NSError *))completionHandler;
+- (void)fetchSumOfSamplesOnDayForType:(HKQuantityType *)quantityType unit:(HKUnit *)unit day:(NSDate *)day skipManual:(BOOL)skipManual completion:(void (^)(double, NSDate *, NSDate *, NSError *))completionHandler;
+- (void)fetchHourlySamplesOnDayForType:(HKQuantityType *)quantityType
+                                  unit:(HKUnit *)unit
+                                   day:(NSDate *)day
+                              interval:(NSUInteger)interval
+                            completion:(void (^)(NSArray *, NSError *))completionHandler;
 - (void)fetchCumulativeSumStatisticsCollection:(HKQuantityType *)quantityType
                                           unit:(HKUnit *)unit
                                      startDate:(NSDate *)startDate
                                        endDate:(NSDate *)endDate
                                     completion:(void (^)(NSArray *, NSError *))completionHandler;
-
-
-- (void)fetchSamplesOfType:(HKSampleType *)quantityType
-                              unit:(HKUnit *)unit
-                         predicate:(NSPredicate *)predicate
-                         ascending:(BOOL)asc
-                             limit:(NSUInteger)lim
-                        completion:(void (^)(NSArray *, NSError *))completion;
-- (void)setObserverForType:(HKSampleType *)quantityType
-                      unit:(HKUnit *)unit;
-
-
 - (void)fetchQuantitySamplesOfType:(HKQuantityType *)quantityType
                               unit:(HKUnit *)unit
                          predicate:(NSPredicate *)predicate
@@ -56,5 +49,17 @@
 - (void)fetchSleepCategorySamplesForPredicate:(NSPredicate *)predicate
                                    limit:(NSUInteger)lim
                                    completion:(void (^)(NSArray *, NSError *))completion;
+
+
+
+- (void)fetchSamplesOfType:(HKSampleType *)quantityType
+                              unit:(HKUnit *)unit
+                         predicate:(NSPredicate *)predicate
+                         ascending:(BOOL)asc
+                             limit:(NSUInteger)lim
+                        completion:(void (^)(NSArray *, NSError *))completion;
+- (void)setObserverForType:(HKSampleType *)quantityType
+                      unit:(HKUnit *)unit;
+
 
 @end
