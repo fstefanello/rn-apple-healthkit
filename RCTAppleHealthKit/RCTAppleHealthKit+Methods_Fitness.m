@@ -206,9 +206,9 @@
         callback(@[RCTMakeError(@"startDate is required in options", nil, nil)]);
         return;
     }
-    
+
     HKQuantityType *quantityType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDistanceWalkingRunning];
-    
+
     [self fetchCumulativeSumStatisticsCollection:quantityType
                                             unit:unit
                                        startDate:startDate
@@ -261,9 +261,9 @@
         callback(@[RCTMakeError(@"startDate is required in options", nil, nil)]);
         return;
     }
-    
+
     HKQuantityType *quantityType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDistanceCycling];
-    
+
     [self fetchCumulativeSumStatisticsCollection:quantityType
                                             unit:unit
                                        startDate:startDate
@@ -315,9 +315,9 @@
         callback(@[RCTMakeError(@"startDate is required in options", nil, nil)]);
         return;
     }
-    
+
     HKQuantityType *quantityType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierFlightsClimbed];
-    
+
     [self fetchCumulativeSumStatisticsCollection:quantityType
                                             unit:unit
                                        startDate:startDate
@@ -338,7 +338,7 @@
 - (void)fitness_getActiveTimeOnDay:(NSDictionary *)input callback:(RCTResponseSenderBlock)callback
 {
   NSDate *date = [RCTAppleHealthKit dateFromOptions:input key:@"date" withDefault:[NSDate date]];
-
+  BOOL skipManual = [RCTAppleHealthKit boolFromOptions:input key:@"skipManual" withDefault:FALSE];
   if(date == nil) {
     callback(@[RCTMakeError(@"could not parse date from options.date", nil, nil)]);
     return;
@@ -350,11 +350,12 @@
   [self fetchSumOfSamplesOnDayForType:minutesCountType
   unit:stepsUnit
   day:date
+  skipManual:skipManual
   completion:^(double value, NSDate *startDate, NSDate *endDate, NSError *error) {
 
     if (!value) {
-      NSLog(@"could not fetch step count for day: %@", error);
-      callback(@[RCTMakeError(@"could not fetch step count for day", error, nil)]);
+      NSLog(@"could not fetch active time for day: %@", error);
+      callback(@[RCTMakeError(@"could not fetch active time for day", error, nil)]);
       return;
     }
 
